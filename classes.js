@@ -1,20 +1,19 @@
 /* eslint-disable max-len */
 // @name         SakuraDanmakuClasses
 // @namespace    https://muted.top/
-// @version      0.4
+// @version      0.5.0
 // @description  Classes for SakuraDanmaku
 // @author       MUTED64
 
 class BilibiliDanmaku {
   static #EP_API_BASE = "https://api.bilibili.com/pgc/view/web/season/";
   static #DANMAKU_API_BASE = "https://api.bilibili.com/x/v1/dm/list.so/";
+  static #KEYWORD_API_BASE =
+    "https://api.bilibili.com/x/web-interface/search/type?search_type=media_bangumi";
 
-  constructor(
-    episode_url = "https://www.bilibili.com/bangumi/play/ep693247",
-    episode = 1
-  ) {
-    this.episode = episode; // 第几话
-    this.episode_url = episode_url;
+  constructor(keyword, episode) {
+    this.keyword = keyword;
+    this.episode = episode;
   }
 
   // GM_xmlhttpRequest的Promise封装
@@ -66,8 +65,15 @@ class BilibiliDanmaku {
 
   // 获取Bilibili对应视频的弹幕
   async getInfoAndDanmaku() {
-    // 获取epid
-    this.epid = (this.episode_url.match(/\/ep(\d+)/i) || [])[1] || "";
+    const fetchedFromKeyword = JSON.parse(
+      await this.#makeGetRequest(
+        `${this.constructor.#KEYWORD_API_BASE}&keyword=${this.keyword}`
+      )
+    ).data.result;
+
+    this.mdid = fetchedFromKeyword[0].media_id;
+    this.ssid = fetchedFromKeyword[0].season_id;
+    this.epid = fetchedFromKeyword[0].eps[0].id;
 
     // 获取cid
     let { code, message, result } = JSON.parse(
@@ -87,6 +93,8 @@ class BilibiliDanmaku {
       )
     );
     this.basic_info = {
+      mdid: this.mdid,
+      ssid: this.ssid,
       epid: this.epid,
       cid: this.cid,
       comments: this.comments,
@@ -99,15 +107,15 @@ class BilibiliDanmaku {
 class DanmakuLoader {
   danmaku;
 
-  constructor(episode_url, episode, container, video) {
-    this.episode_url = episode_url;
+  constructor(keyword, episode, container, video) {
+    this.keyword = keyword;
     this.episode = episode;
     this.container = container;
     this.video = video;
   }
 
   async #loadDanmaku() {
-    const bilibiliDanmaku = new BilibiliDanmaku(this.episode_url, this.episode);
+    const bilibiliDanmaku = new BilibiliDanmaku(this.keyword, this.episode);
     this.basic_info = await bilibiliDanmaku.getInfoAndDanmaku(this.episode_url);
     this.danmaku = new Danmaku({
       container: this.container,
@@ -178,6 +186,9 @@ class DanmakuSettings {
         this.danmakuSettingBox.style.transform = "scale(0)";
       }
     });
+
+    // 调整一下底栏样式，原来的看不太清
+    this.iframe.querySelector(".dplayer-controller").style.backgroundColor = "#0002";
   }
 
   #createSettingBox() {
