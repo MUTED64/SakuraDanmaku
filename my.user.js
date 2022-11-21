@@ -3,13 +3,14 @@
 // ==UserScript==
 // @name         SakuraDanmaku
 // @namespace    https://muted.top/
-// @version      0.6.0
+// @version      0.8.0
 // @description  yhdm, but with Danmaku from Bilibili
 // @author       MUTED64
 // @match        *://*.yhdmp.cc/vp/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
 // @grant        GM_getValue
+// @grant        GM_addElement
 // @connect      api.bilibili.com
 // @icon         https://www.yhdmp.cc/yxsf/yh_pic/favicon.ico
 // @require      https://bowercdn.net/c/danmaku-2.0.4/dist/danmaku.dom.min.js
@@ -29,6 +30,11 @@ async function loadDanmaku() {
       .querySelector("body div.gohome > span")
       .textContent.replace(/[^0-9]+/gi, "")
   );
+  const autoLoadedMessage = `自动加载弹幕：\n${keyword} 第${episode}集\n如果不是你想要的，请手动填入对应番剧`;
+  const loadFailedMessage = `加载弹幕失败：\n${keyword} 第${episode}集\n请检查B站是否存在对应剧集`;
+  let danmaku;
+  let danmakuLoader;
+  let danmakuDOM;
 
   const iframeDocument = iframe.contentWindow.document;
   const container = iframeDocument.querySelector("div.dplayer-video-wrap");
@@ -37,10 +43,60 @@ async function loadDanmaku() {
     "div.dplayer-controller > div.dplayer-icons.dplayer-icons-right"
   );
 
-  const danmakuLoader = new DanmakuLoader(keyword, episode, container, video);
-  await danmakuLoader.showDanmaku();
-  const danmakuDOM = danmakuLoader.container.lastElementChild;
-  new DanmakuSettings(danmakuLoader, danmakuDOM, iconsBar, iframeDocument);
+  try {
+    danmaku = await loadFromBilibili(keyword, episode);
+    addDialog(autoLoadedMessage);
+  } catch {
+    addDialog(loadFailedMessage);
+  }
+
+  function addDialog(message) {
+    GM_addElement(document.body, "div", {
+      style:
+        "position:fixed;\
+              top:50%;\
+              left:1em;\
+              transform:translateY(-50%);\
+              background-color:rgba(0,0,0,0.7);\
+              color:white;\
+              font:1em sans-serif;\
+              padding:1em;\
+              border-radius:1em;\
+              line-height:1.5;\
+              min-width:17em;",
+      class: "danmakuChoose",
+    });
+
+    document.querySelector(
+      ".danmakuChoose"
+    ).innerHTML = `<pre style="margin:0">${message}</pre>
+    <div style="display:flex;justify-content:space-between;align-item:center;margin:1em 0;"><label for="keyword">番剧名称</label><input style="border-radius:0.2em;padding:0 0.2em;" id="keyword" value="${keyword}"/></div>
+    <div style="display:flex;justify-content:space-between;align-item:center;margin:1em 0;"><label for="episode">剧集数</label><input style="border-radius:0.2em;padding:0 0.2em;" id="episode" value="${episode}"/></div>
+    <button id="manualDanmakuButton" style="width:100%;margin-bottom:0.2em;">确认</button>`;
+
+    document
+      .querySelector("#manualDanmakuButton")
+      .addEventListener("click", () => {
+        const keyword = document.querySelector("#keyword").value;
+        const episode = document.querySelector("#episode").value;
+        reloadDanmaku(keyword, episode);
+      });
+  }
+
+  async function loadFromBilibili(keyword, episode) {
+    danmakuLoader = new DanmakuLoader(keyword, episode, container, video);
+    danmaku = await danmakuLoader.showDanmaku();
+    danmakuDOM = danmakuLoader.container.lastElementChild;
+    new DanmakuSettings(danmakuLoader, danmakuDOM, iconsBar, iframeDocument);
+    return danmaku;
+  }
+
+  async function reloadDanmaku(keyword, episode) {
+    if(danmaku){
+      danmaku.destroy();
+    }
+    await loadFromBilibili(keyword,episode);
+  }
 }
 
 const iframe = document.querySelector("iframe");

@@ -133,6 +133,7 @@ class DanmakuLoader {
       this.danmaku.resize();
     });
     resizeObserver.observe(this.container);
+    return this.danmaku;
   }
 }
 
