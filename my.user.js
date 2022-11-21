@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         SakuraDanmaku 樱花弹幕
 // @namespace    https://muted.top/
-// @version      0.8.0
+// @version      0.8.2
 // @description  yhdm, but with Danmaku from Bilibili  让樱花动漫加载 Bilibili 弹幕
 // @author       MUTED64
 // @match        *://*.yhdmp.cc/vp/*

@@ -99,7 +99,6 @@ class BilibiliDanmaku {
       cid: this.cid,
       comments: this.comments,
     };
-    // localStorage[`basic_info_${cid}`] = JSON.stringify(basic_info);
     return this.basic_info;
   }
 }
