@@ -1,13 +1,13 @@
 /* eslint-disable max-len */
 // @name         SakuraDanmakuClasses
 // @namespace    https://muted.top/
-// @version      0.5.0
+// @version      0.6.0
 // @description  Classes for SakuraDanmaku
 // @author       MUTED64
 
 class BilibiliDanmaku {
-  static #EP_API_BASE = "https://api.bilibili.com/pgc/view/web/season/";
-  static #DANMAKU_API_BASE = "https://api.bilibili.com/x/v1/dm/list.so/";
+  static #EP_API_BASE = "https://api.bilibili.com/pgc/view/web/season";
+  static #DANMAKU_API_BASE = "https://api.bilibili.com/x/v1/dm/list.so";
   static #KEYWORD_API_BASE =
     "https://api.bilibili.com/x/web-interface/search/type?search_type=media_bangumi";
 
@@ -149,6 +149,13 @@ class DanmakuSettings {
     this.danmakuDOM = danmakuDOM;
     this.iconsBar = iconsBar;
     this.iframe = iframe;
+    this.danmakuSettings = GM_getValue("danmakuSettings", {
+      show: true,
+      speed: 144,
+      opacity: 1,
+      fontSize: 25,
+      limit: 1
+    });
     this.#createButton();
     this.#createSettingBox();
     this.#addSettingItems();
@@ -188,7 +195,8 @@ class DanmakuSettings {
     });
 
     // 调整一下底栏样式，原来的看不太清
-    this.iframe.querySelector(".dplayer-controller").style.backgroundColor = "#0002";
+    this.iframe.querySelector(".dplayer-controller").style.backgroundColor =
+      "#0002";
   }
 
   #createSettingBox() {
@@ -219,13 +227,21 @@ class DanmakuSettings {
       "<span class=\"dplayer-label\">显示弹幕</span>";
     this.showOrHideToggle = this.iframe.createElement("input");
     this.showOrHideToggle.setAttribute("type", "checkbox");
-    this.showOrHideToggle.setAttribute("checked", "checked");
+    this.danmakuSettings.show ? this.showOrHideToggle.setAttribute("checked", "checked") : null;
     this.showOrHideToggle.style.float = "right";
+    this.danmakuDOM.setAttribute(
+      "style",
+      this.danmakuSettings.show ? "display:block;" : "display:none;"
+    );
     this.showOrHideToggle.addEventListener("click", () => {
       if (this.showOrHideToggle.checked) {
         this.danmakuDOM.setAttribute("style", "display:block;");
+        this.danmakuSettings.show = true;
+        GM_setValue("danmakuSettings", this.danmakuSettings);
       } else {
         this.danmakuDOM.setAttribute("style", "display:none;");
+        this.danmakuSettings.show = false;
+        GM_setValue("danmakuSettings", this.danmakuSettings);
       }
     });
     this.showOrHideDanmaku.appendChild(this.showOrHideToggle);
@@ -247,9 +263,12 @@ class DanmakuSettings {
     this.danmakuSpeedRange.style.width = "50%";
     this.danmakuSpeedRange.setAttribute("min", 72);
     this.danmakuSpeedRange.setAttribute("max", 288);
-    this.danmakuSpeedRange.setAttribute("value", 144);
+    this.danmakuSpeedRange.setAttribute("value", this.danmakuSettings.speed);
+    this.danmaku.speed = this.danmakuSettings.speed;
     this.danmakuSpeedRange.addEventListener("input", () => {
-      this.danmaku.speed = Number(this.danmakuSpeedRange.value);
+      this.danmakuSettings.speed = Number(this.danmakuSpeedRange.value);
+      GM_setValue("danmakuSettings", this.danmakuSettings);
+      this.danmaku.speed = this.danmakuSettings.speed;
     });
     this.danmakuSpeed.appendChild(this.danmakuSpeedRange);
     this.danmakuSettingBox.appendChild(this.danmakuSpeed);
@@ -272,9 +291,12 @@ class DanmakuSettings {
     this.danmakuOpacityRange.setAttribute("min", 0);
     this.danmakuOpacityRange.setAttribute("max", 1);
     this.danmakuOpacityRange.setAttribute("step", 0.1);
-    this.danmakuOpacityRange.setAttribute("value", 1);
+    this.danmakuOpacityRange.setAttribute("value", this.danmakuSettings.opacity);
+    this.danmakuDOM.style.opacity = this.danmakuSettings.opacity;
     this.danmakuOpacityRange.addEventListener("input", () => {
-      this.danmakuDOM.style.opacity = Number(this.danmakuOpacityRange.value);
+      this.danmakuSettings.opacity = Number(this.danmakuOpacityRange.value);
+      GM_setValue("danmakuSettings", this.danmakuSettings);
+      this.danmakuDOM.style.opacity = this.danmakuSettings.opacity;
     });
     this.danmakuOpacity.appendChild(this.danmakuOpacityRange);
     this.danmakuSettingBox.appendChild(this.danmakuOpacity);
@@ -297,16 +319,21 @@ class DanmakuSettings {
     this.danmakuFontSizeRange.setAttribute("min", 16);
     this.danmakuFontSizeRange.setAttribute("max", 32);
     this.danmakuFontSizeRange.setAttribute("step", 1);
-    this.danmakuFontSizeRange.setAttribute("value", 25);
+    this.danmakuFontSizeRange.setAttribute("value", this.danmakuSettings.fontSize);
+    setDanmakuFontSize(this.danmakuSettings.fontSize, this.danmaku);
     this.danmakuFontSizeRange.addEventListener("input", () => {
-      for (const i of this.danmaku.comments) {
-        i.style.font = `${Number(
-          this.danmakuFontSizeRange.value
-        )}px sans-serif`;
-      }
+      this.danmakuSettings.fontSize = Number(this.danmakuFontSizeRange.value);
+      GM_setValue("danmakuSettings", this.danmakuSettings);
+      setDanmakuFontSize(this.danmakuSettings.fontSize, this.danmaku);
     });
     this.danmakuFontSize.appendChild(this.danmakuFontSizeRange);
     this.danmakuSettingBox.appendChild(this.danmakuFontSize);
+
+    function setDanmakuFontSize(fontSize,danmaku) {
+      for (const i of danmaku.comments) {
+        i.style.font = `${fontSize}px sans-serif`;
+      }
+    }
   }
 
   #addDanmakuLimit() {
@@ -325,17 +352,24 @@ class DanmakuSettings {
     this.danmakuLimitRange.setAttribute("min", 0);
     this.danmakuLimitRange.setAttribute("max", 1);
     this.danmakuLimitRange.setAttribute("step", 0.01);
-    this.danmakuLimitRange.setAttribute("value", 1);
+    this.danmakuLimitRange.setAttribute("value", this.danmakuSettings.limit);
+    limitDanmaku(this.danmakuSettings.limit, this.danmaku);
     this.danmakuLimitRange.addEventListener("input", () => {
-      for (const i of this.danmaku.comments) {
-        i.style.display = "block";
-        if (Math.random() > Number(this.danmakuLimitRange.value)) {
-          i.style.display = "none";
-        }
-      }
+      this.danmakuSettings.limit = Number(this.danmakuLimitRange.value);
+      GM_setValue("danmakuSettings", this.danmakuSettings);
+      limitDanmaku(this.danmakuSettings.limit, this.danmaku);
     });
     this.danmakuLimit.appendChild(this.danmakuLimitRange);
     this.danmakuSettingBox.appendChild(this.danmakuLimit);
+
+    function limitDanmaku(percent,danmaku) {
+      for (const i of danmaku.comments) {
+        i.style.display = "block";
+        if (Math.random() > percent) {
+          i.style.display = "none";
+        }
+      }
+    }
   }
 
   #addOffsetSetting() {

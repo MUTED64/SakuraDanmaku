@@ -3,14 +3,17 @@
 // ==UserScript==
 // @name         SakuraDanmaku
 // @namespace    https://muted.top/
-// @version      0.5.0
+// @version      0.6.0
 // @description  yhdm, but with Danmaku from Bilibili
 // @author       MUTED64
 // @match        *://*.yhdmp.cc/vp/*
 // @grant        GM_xmlhttpRequest
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @connect      api.bilibili.com
 // @icon         https://www.yhdmp.cc/yxsf/yh_pic/favicon.ico
 // @require      https://bowercdn.net/c/danmaku-2.0.4/dist/danmaku.dom.min.js
-// @require      https://greasyfork.org/scripts/454443-sakuradanmakuclasses/code/SakuraDanmakuClasses.js?version=1114685
+// @require      https://greasyfork.org/scripts/454443-sakuradanmakuclasses/code/SakuraDanmakuClasses.js?version=1119504
 // @run-at       document-end
 // ==/UserScript==
 
