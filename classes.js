@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 // @name         SakuraDanmakuClasses
 // @namespace    https://muted.top/
-// @version      0.6.0
+// @version      0.8.0
 // @description  Classes for SakuraDanmaku
 // @author       MUTED64
 
@@ -65,7 +65,7 @@ class BilibiliDanmaku {
 
   // 获取Bilibili对应视频的弹幕
   async getInfoAndDanmaku() {
-    const fetchedFromKeyword = JSON.parse(
+    const fetchedFromKeyword = await JSON.parse(
       await this.#makeGetRequest(
         `${this.constructor.#KEYWORD_API_BASE}&keyword=${this.keyword}`
       )
@@ -116,7 +116,7 @@ class DanmakuLoader {
 
   async #loadDanmaku() {
     const bilibiliDanmaku = new BilibiliDanmaku(this.keyword, this.episode);
-    this.basic_info = await bilibiliDanmaku.getInfoAndDanmaku(this.episode_url);
+    this.basic_info = await bilibiliDanmaku.getInfoAndDanmaku();
     this.danmaku = new Danmaku({
       container: this.container,
       media: this.video,
@@ -188,8 +188,8 @@ class DanmakuSettings {
     });
     this.iframe.addEventListener("click", (e) => {
       if (
-        !e.path.includes(this.danmakuButton) &&
-        !e.path.includes(this.danmakuSettingBox)
+        !e.composedPath().includes(this.danmakuButton) &&
+        !e.composedPath().includes(this.danmakuSettingBox)
       ) {
         this.danmakuSettingBox.style.transform = "scale(0)";
       }

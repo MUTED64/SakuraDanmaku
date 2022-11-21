@@ -14,7 +14,7 @@
 // @connect      api.bilibili.com
 // @icon         https://www.yhdmp.cc/yxsf/yh_pic/favicon.ico
 // @require      https://bowercdn.net/c/danmaku-2.0.4/dist/danmaku.dom.min.js
-// @require      https://greasyfork.org/scripts/454443-sakuradanmakuclasses/code/SakuraDanmakuClasses.js?version=1119504
+// @require      https://greasyfork.org/scripts/454443-sakuradanmakuclasses/code/SakuraDanmakuClasses.js?version=1119620
 // @run-at       document-end
 // ==/UserScript==
 
