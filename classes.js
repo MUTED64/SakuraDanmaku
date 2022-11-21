@@ -65,7 +65,7 @@ class BilibiliDanmaku {
 
   // 获取Bilibili对应视频的弹幕
   async getInfoAndDanmaku() {
-    const fetchedFromKeyword = await JSON.parse(
+    const fetchedFromKeyword = JSON.parse(
       await this.#makeGetRequest(
         `${this.constructor.#KEYWORD_API_BASE}&keyword=${this.keyword}`
       )
