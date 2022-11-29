@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         SakuraDanmaku 樱花弹幕
 // @namespace    https://muted.top/
-// @version      0.9.0
+// @version      0.9.1
 // @description  yhdm, but with Danmaku from Bilibili  让樱花动漫加载 Bilibili 弹幕
 // @author       MUTED64
 // @match        *://*.yhdmp.cc/vp/*
@@ -14,7 +14,7 @@
 // @connect      api.bilibili.com
 // @icon         https://www.yhdmp.cc/yxsf/yh_pic/favicon.ico
 // @require      https://bowercdn.net/c/danmaku-2.0.4/dist/danmaku.dom.min.js
-// @require      https://greasyfork.org/scripts/454443-sakuradanmakuclasses/code/SakuraDanmakuClasses.js?version=1122384
+// @require      https://greasyfork.org/scripts/454443-sakuradanmakuclasses/code/SakuraDanmakuClasses.js?version=1122392
 // @license      GPLv3
 // @run-at       document-end
 // ==/UserScript==

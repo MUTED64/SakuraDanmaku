@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 // @name         SakuraDanmakuClasses
 // @namespace    https://muted.top/
-// @version      0.9.0
+// @version      0.9.1
 // @description  Classes for SakuraDanmaku
 // @author       MUTED64
 
@@ -167,8 +167,12 @@ class DanmakuSettings {
   }
 
   #createButton() {
+    if(this.iframe.querySelector("#danmaku-wrapper")){
+      this.iframe.querySelector("#danmaku-wrapper").remove();
+    }
     // 创建按钮
     this.danmakuWrapper = this.iframe.createElement("div");
+    this.danmakuWrapper.setAttribute("id", "danmaku-wrapper");
     this.danmakuWrapper.setAttribute("class", "dplayer-setting");
     this.danmakuWrapper.setAttribute(
       "style",
