@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 // @name         SakuraDanmakuClasses
 // @namespace    https://muted.top/
-// @version      0.8.0
+// @version      0.9.0
 // @description  Classes for SakuraDanmaku
 // @author       MUTED64
 
@@ -64,42 +64,47 @@ class BilibiliDanmaku {
   }
 
   // 获取Bilibili对应视频的弹幕
-  async getInfoAndDanmaku() {
-    const fetchedFromKeyword = JSON.parse(
-      await this.#makeGetRequest(
-        `${this.constructor.#KEYWORD_API_BASE}&keyword=${this.keyword}`
-      )
-    ).data.result;
+  async getInfoAndDanmaku(xml = undefined) {
+    if (!xml) {
+      const fetchedFromKeyword = JSON.parse(
+        await this.#makeGetRequest(
+          `${this.constructor.#KEYWORD_API_BASE}&keyword=${this.keyword}`
+        )
+      ).data.result;
 
-    this.mdid = fetchedFromKeyword[0].media_id;
-    this.ssid = fetchedFromKeyword[0].season_id;
-    this.epid = fetchedFromKeyword[0].eps[0].id;
+      this.mdid = fetchedFromKeyword[0].media_id;
+      this.ssid = fetchedFromKeyword[0].season_id;
+      this.epid = fetchedFromKeyword[0].eps[0].id;
 
-    // 获取cid
-    let { code, message, result } = JSON.parse(
-      await this.#makeGetRequest(
-        `${this.constructor.#EP_API_BASE}?ep_id=${this.epid}`
-      )
-    );
-    if (code) {
-      throw new Error(message);
+      // 获取cid
+      let { code, message, result } = JSON.parse(
+        await this.#makeGetRequest(
+          `${this.constructor.#EP_API_BASE}?ep_id=${this.epid}`
+        )
+      );
+      if (code) {
+        throw new Error(message);
+      }
+      this.cid = result.episodes[this.episode - 1].cid;
+
+      // 获取弹幕
+      this.comments = this.#parseBilibiliDanmaku(
+        await this.#makeGetRequest(
+          `${this.constructor.#DANMAKU_API_BASE}?oid=${this.cid}`
+        )
+      );
+      this.basic_info = {
+        mdid: this.mdid,
+        ssid: this.ssid,
+        epid: this.epid,
+        cid: this.cid,
+        comments: this.comments,
+      };
+      return this.basic_info;
+    } else {
+      this.basic_info = { comments: this.#parseBilibiliDanmaku(xml) };
+      return this.basic_info;
     }
-    this.cid = result.episodes[this.episode - 1].cid;
-
-    // 获取弹幕
-    this.comments = this.#parseBilibiliDanmaku(
-      await this.#makeGetRequest(
-        `${this.constructor.#DANMAKU_API_BASE}?oid=${this.cid}`
-      )
-    );
-    this.basic_info = {
-      mdid: this.mdid,
-      ssid: this.ssid,
-      epid: this.epid,
-      cid: this.cid,
-      comments: this.comments,
-    };
-    return this.basic_info;
   }
 }
 
@@ -113,9 +118,9 @@ class DanmakuLoader {
     this.video = video;
   }
 
-  async #loadDanmaku() {
+  async #loadDanmaku(xml) {
     const bilibiliDanmaku = new BilibiliDanmaku(this.keyword, this.episode);
-    this.basic_info = await bilibiliDanmaku.getInfoAndDanmaku();
+    this.basic_info = await bilibiliDanmaku.getInfoAndDanmaku(xml);
     this.danmaku = new Danmaku({
       container: this.container,
       media: this.video,
@@ -124,8 +129,8 @@ class DanmakuLoader {
     });
   }
 
-  async showDanmaku() {
-    await this.#loadDanmaku();
+  async showDanmaku(xml) {
+    await this.#loadDanmaku(xml);
     this.video.style.position = "absolute";
     this.danmaku.show();
     let resizeObserver = new ResizeObserver(() => {
@@ -154,7 +159,7 @@ class DanmakuSettings {
       speed: 144,
       opacity: 1,
       fontSize: 25,
-      limit: 1
+      limit: 1,
     });
     this.#createButton();
     this.#createSettingBox();
@@ -227,7 +232,9 @@ class DanmakuSettings {
       "<span class=\"dplayer-label\">显示弹幕</span>";
     this.showOrHideToggle = this.iframe.createElement("input");
     this.showOrHideToggle.setAttribute("type", "checkbox");
-    this.danmakuSettings.show ? this.showOrHideToggle.setAttribute("checked", "checked") : null;
+    this.danmakuSettings.show
+      ? this.showOrHideToggle.setAttribute("checked", "checked")
+      : null;
     this.showOrHideToggle.style.float = "right";
     this.danmakuDOM.setAttribute(
       "style",
@@ -291,7 +298,10 @@ class DanmakuSettings {
     this.danmakuOpacityRange.setAttribute("min", 0);
     this.danmakuOpacityRange.setAttribute("max", 1);
     this.danmakuOpacityRange.setAttribute("step", 0.1);
-    this.danmakuOpacityRange.setAttribute("value", this.danmakuSettings.opacity);
+    this.danmakuOpacityRange.setAttribute(
+      "value",
+      this.danmakuSettings.opacity
+    );
     this.danmakuDOM.style.opacity = this.danmakuSettings.opacity;
     this.danmakuOpacityRange.addEventListener("input", () => {
       this.danmakuSettings.opacity = Number(this.danmakuOpacityRange.value);
@@ -319,7 +329,10 @@ class DanmakuSettings {
     this.danmakuFontSizeRange.setAttribute("min", 16);
     this.danmakuFontSizeRange.setAttribute("max", 32);
     this.danmakuFontSizeRange.setAttribute("step", 1);
-    this.danmakuFontSizeRange.setAttribute("value", this.danmakuSettings.fontSize);
+    this.danmakuFontSizeRange.setAttribute(
+      "value",
+      this.danmakuSettings.fontSize
+    );
     setDanmakuFontSize(this.danmakuSettings.fontSize, this.danmaku);
     this.danmakuFontSizeRange.addEventListener("input", () => {
       this.danmakuSettings.fontSize = Number(this.danmakuFontSizeRange.value);
@@ -329,7 +342,7 @@ class DanmakuSettings {
     this.danmakuFontSize.appendChild(this.danmakuFontSizeRange);
     this.danmakuSettingBox.appendChild(this.danmakuFontSize);
 
-    function setDanmakuFontSize(fontSize,danmaku) {
+    function setDanmakuFontSize(fontSize, danmaku) {
       for (const i of danmaku.comments) {
         i.style.font = `${fontSize}px sans-serif`;
       }
@@ -362,7 +375,7 @@ class DanmakuSettings {
     this.danmakuLimit.appendChild(this.danmakuLimitRange);
     this.danmakuSettingBox.appendChild(this.danmakuLimit);
 
-    function limitDanmaku(percent,danmaku) {
+    function limitDanmaku(percent, danmaku) {
       for (const i of danmaku.comments) {
         i.style.display = "block";
         if (Math.random() > percent) {

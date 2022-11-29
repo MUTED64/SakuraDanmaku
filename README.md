@@ -18,7 +18,7 @@ Greasy Fork:    <https://greasyfork.org/en/scripts/455196-sakuradanmaku>
 
 GitHub:         <https://github.com/MUTED64/SakuraDanmaku>
 
-## 计划中的功能
+## 已实现的功能
 
 - [x] 加载 Bilibili 弹幕
 - [x] 交互式调整弹幕样式并嵌入 Control Bar
@@ -29,6 +29,10 @@ GitHub:         <https://github.com/MUTED64/SakuraDanmaku>
 - [x] 持久化设置存储
 - [x] 手动修改弹幕池
 - [x] 前端交互面板
+- [x] 手动选择本地 XML 弹幕
+
+## 计划中的功能
+
 - [ ] 更多网站适配
 - [ ] 错误信息提示
 
