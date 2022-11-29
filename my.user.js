@@ -3,7 +3,7 @@
 // ==UserScript==
 // @name         SakuraDanmaku 樱花弹幕
 // @namespace    https://muted.top/
-// @version      0.9.1
+// @version      0.9.2
 // @description  yhdm, but with Danmaku from Bilibili  让樱花动漫加载 Bilibili 弹幕
 // @author       MUTED64
 // @match        *://*.yhdmp.cc/vp/*
@@ -46,9 +46,10 @@ async function loadDanmaku() {
 
   try {
     danmaku = await loadFromBilibili(keyword, episode);
-    addDialog(autoLoadedMessage);
-  } catch {
-    addDialog(loadFailedMessage);
+    await addDialog(autoLoadedMessage);
+  } catch(e) {
+    console.log(e);
+    await addDialog(loadFailedMessage);
   }
 
   function addDialog(message) {
@@ -101,11 +102,24 @@ async function loadDanmaku() {
   }
 
   async function loadFromBilibili(keyword, episode, xml) {
-    danmakuLoader = new DanmakuLoader(keyword, episode, container, video);
-    danmaku = await danmakuLoader.showDanmaku(xml);
-    danmakuDOM = danmakuLoader.container.lastElementChild;
-    new DanmakuSettings(danmakuLoader, danmakuDOM, iconsBar, iframeDocument);
-    return danmaku;
+    while (!container || !video){
+      await wait(1);
+    }
+    load();
+
+    function wait(seconds) {
+      return new Promise(resolve => {
+        setTimeout(resolve, seconds * 1000);
+      });
+    } 
+
+    async function load(){
+      danmakuLoader = await new DanmakuLoader(keyword, episode, container, video);
+      danmaku = await danmakuLoader.showDanmaku(xml);
+      danmakuDOM = await danmakuLoader.container.lastElementChild;
+      await new DanmakuSettings(danmakuLoader, danmakuDOM, iconsBar, iframeDocument);
+      return danmaku;
+    }
   }
 
   async function reloadDanmaku(keyword, episode, xml) {
