@@ -1,9 +1,10 @@
+/* eslint-disable indent */
 /* eslint-disable max-len */
 /* eslint-disable no-undef */
 // ==UserScript==
 // @name         SakuraDanmaku 樱花弹幕
 // @namespace    https://greasyfork.org/en/scripts/455196-sakuradanmaku-%E6%A8%B1%E8%8A%B1%E5%BC%B9%E5%B9%95
-// @version      0.9.3
+// @version      1.0.0
 // @description  yhdm, but with Danmaku from Bilibili  让樱花动漫加载 Bilibili 弹幕
 // @author       MUTED64
 // @match        https://*.yhdmp.cc/vp/*
@@ -46,9 +47,9 @@ const sites = {
     episode: "span.btn-pc.page-title",
     container: "div.art-video-player",
     video: "div.art-video-player > video.art-video",
-    iconsBar: "div.art-video-player div.art-bottom > div.art-controls-right",
-    panelRight: "5em",
-    panelBottom: "10%",
+    iconsBar: "div.art-video-player div.art-controls > div.art-controls-right",
+    panelRight: "10em",
+    panelBottom: "2%",
   },
 };
 
@@ -153,6 +154,7 @@ class BilibiliDanmaku {
 
 class DanmakuControl {
   danmaku;
+  danmakuElement;
 
   constructor(keyword, episode, container, video) {
     this.keyword = keyword;
@@ -175,10 +177,22 @@ class DanmakuControl {
   show() {
     this.video.style.position = "absolute";
     this.danmaku.show();
+    this.danmakuElement = this.container.lastElementChild;
+    this.danmakuElement.style.zIndex = 1000;
+    this.danmakuSettings = getStoredSettings();
+    this.applySettings(this.danmakuSettings);
     let resizeObserver = new ResizeObserver(() => {
       this.danmaku.resize();
     });
     resizeObserver.observe(this.container);
+  }
+
+  toggleShowAndHide(show) {
+    if (show) {
+      this.danmakuElement.style.display = "block";
+    } else {
+      this.danmakuElement.style.display = "none";
+    }
   }
 
   destroy() {
@@ -186,7 +200,7 @@ class DanmakuControl {
   }
 
   setSpeed(speed) {
-    this.danmaku.speed = speed;
+    this.danmaku.speed = Number(speed);
   }
 
   setFontSize(fontSize) {
@@ -203,449 +217,24 @@ class DanmakuControl {
       }
     }
   }
-}
 
-class DanmakuSettings {
-  danmakuWrapper;
-  danmakuButton;
-  danmakuSettingBox;
-  buttonHtml =
-    '<button class="dplayer-icon dplayer-comment-icon" data-balloon="弹幕设置" data-balloon-pos="up"><span class="dplayer-icon-content"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 32 32"><path d="M27.128 0.38h-22.553c-2.336 0-4.229 1.825-4.229 4.076v16.273c0 2.251 1.893 4.076 4.229 4.076h4.229v-2.685h8.403l-8.784 8.072 1.566 1.44 7.429-6.827h9.71c2.335 0 4.229-1.825 4.229-4.076v-16.273c0-2.252-1.894-4.076-4.229-4.076zM28.538 19.403c0 1.5-1.262 2.717-2.819 2.717h-8.36l-0.076-0.070-0.076 0.070h-11.223c-1.557 0-2.819-1.217-2.819-2.717v-13.589c0-1.501 1.262-2.718 2.819-2.718h19.734c1.557 0 2.819-0.141 2.819 1.359v14.947zM9.206 10.557c-1.222 0-2.215 0.911-2.215 2.036s0.992 2.035 2.215 2.035c1.224 0 2.216-0.911 2.216-2.035s-0.992-2.036-2.216-2.036zM22.496 10.557c-1.224 0-2.215 0.911-2.215 2.036s0.991 2.035 2.215 2.035c1.224 0 2.215-0.911 2.215-2.035s-0.991-2.036-2.215-2.036zM15.852 10.557c-1.224 0-2.215 0.911-2.215 2.036s0.991 2.035 2.215 2.035c1.222 0 2.215-0.911 2.215-2.035s-0.992-2.036-2.215-2.036z"></path></svg></span></button>';
-
-  constructor(danmakuControl, danmakuElement, iconsBar) {
-    this.danmaku = danmakuControl.danmaku;
-    this.danmakuLoader = danmakuControl;
-    this.danmakuElement = danmakuElement;
-    this.danmakuElement.style.zIndex = 1000;
-    this.iconsBar = document.querySelector(iconsBar);
-    this.danmakuSettings = GM_getValue("danmakuSettings", {
-      show: true,
-      speed: 144,
-      opacity: 1,
-      fontSize: 25,
-      limit: 1,
-    });
-    this.#createButton();
-    this.#createSettingBox();
-    this.#addSettingItems();
+  setOpacity(opacity) {
+    this.danmakuElement.style.opacity = opacity;
   }
 
-  #createButton() {
-    if (document.querySelector("#danmaku-wrapper")) {
-      document.querySelector("#danmaku-wrapper").remove();
+  setOffset(offset) {
+    for (const comment of this.danmaku.comments) {
+      comment.time = comment.baseTime - Number(offset);
     }
-    // 创建按钮
-    this.danmakuWrapper = document.createElement("div");
-    this.danmakuWrapper.setAttribute("id", "danmaku-wrapper");
-    this.danmakuWrapper.setAttribute("class", "dplayer-setting");
-    this.danmakuWrapper.setAttribute(
-      "style",
-      "display:inline-block;height:100%;"
-    );
-    this.danmakuWrapper.innerHTML = this.buttonHtml;
-    // 添加到播放器
-    this.iconsBar.prepend(this.danmakuWrapper);
-    this.danmakuButton = this.danmakuWrapper.firstChild;
-
-    // 设定打开和关闭面板的操作
-    this.danmakuButton.addEventListener("click", () => {
-      if (
-        this.danmakuSettingBox.style.transform === "scale(0)" ||
-        !this.danmakuSettingBox.style.transform
-      ) {
-        this.danmakuSettingBox.style.transform = "scale(1)";
-      } else {
-        this.danmakuSettingBox.style.transform = "scale(0)";
-      }
-    });
-    document.addEventListener("click", (e) => {
-      if (
-        !e.composedPath().includes(this.danmakuButton) &&
-        !e.composedPath().includes(this.danmakuSettingBox)
-      ) {
-        this.danmakuSettingBox.style.transform = "scale(0)";
-      }
-    });
-
-    // 调整一下底栏样式，原来的看不太清
-    document.querySelector(".dplayer-controller").style.backgroundColor =
-      "#0002";
+    this.video.currentTime = Number(this.video.currentTime);
   }
 
-  #createSettingBox() {
-    this.danmakuSettingBox = document.createElement("div");
-    this.danmakuSettingBox.setAttribute("class", "dplayer-setting-box");
-    this.danmakuSettingBox.setAttribute("style", "transform: scale(0);");
-    this.danmakuSettingBox.setAttribute("style", "width: 200px;");
-    this.danmakuWrapper.appendChild(this.danmakuSettingBox);
-  }
-
-  #addSettingItems() {
-    this.#addShowOrHide();
-    this.#addDanmakuSpeed();
-    this.#addDanmakuOpacity();
-    this.#addDanmakuFontSize();
-    this.#addDanmakuLimit();
-    this.#addOffsetSetting();
-  }
-
-  #addShowOrHide() {
-    this.showOrHideDanmaku = document.createElement("div");
-    this.showOrHideDanmaku.setAttribute(
-      "class",
-      "dplayer-setting-item show-danmaku"
-    );
-    this.showOrHideDanmaku.style.display = "block";
-    this.showOrHideDanmaku.innerHTML =
-      '<span class="dplayer-label">显示弹幕</span>';
-    this.showOrHideToggle = document.createElement("input");
-    this.showOrHideToggle.setAttribute("type", "checkbox");
-    this.danmakuSettings.show
-      ? this.showOrHideToggle.setAttribute("checked", "checked")
-      : null;
-    this.showOrHideToggle.style.float = "right";
-    this.danmakuElement.setAttribute(
-      "style",
-      this.danmakuSettings.show ? "display:block;" : "display:none;"
-    );
-    this.showOrHideToggle.addEventListener("click", () => {
-      if (this.showOrHideToggle.checked) {
-        this.danmakuElement.setAttribute("style", "display:block;");
-        this.danmakuSettings.show = true;
-        GM_setValue("danmakuSettings", this.danmakuSettings);
-      } else {
-        this.danmakuElement.setAttribute("style", "display:none;");
-        this.danmakuSettings.show = false;
-        GM_setValue("danmakuSettings", this.danmakuSettings);
-      }
-    });
-    this.showOrHideDanmaku.appendChild(this.showOrHideToggle);
-    this.danmakuSettingBox.appendChild(this.showOrHideDanmaku);
-  }
-
-  #addDanmakuSpeed() {
-    this.danmakuSpeed = document.createElement("div");
-    this.danmakuSpeed.setAttribute(
-      "class",
-      "dplayer-setting-item speed-danmaku"
-    );
-    this.danmakuSpeed.style.display = "block";
-    this.danmakuSpeed.innerHTML = '<span class="dplayer-label">弹幕速度</span>';
-    this.danmakuSpeedRange = document.createElement("input");
-    this.danmakuSpeedRange.setAttribute("type", "range");
-    this.danmakuSpeedRange.style.display = "inline-block";
-    this.danmakuSpeedRange.style.float = "right";
-    this.danmakuSpeedRange.style.width = "50%";
-    this.danmakuSpeedRange.setAttribute("min", 72);
-    this.danmakuSpeedRange.setAttribute("max", 288);
-    this.danmakuSpeedRange.setAttribute("value", this.danmakuSettings.speed);
-    this.danmaku.speed = this.danmakuSettings.speed;
-    this.danmakuSpeedRange.addEventListener("input", () => {
-      this.danmakuSettings.speed = Number(this.danmakuSpeedRange.value);
-      GM_setValue("danmakuSettings", this.danmakuSettings);
-      this.danmaku.speed = this.danmakuSettings.speed;
-    });
-    this.danmakuSpeed.appendChild(this.danmakuSpeedRange);
-    this.danmakuSettingBox.appendChild(this.danmakuSpeed);
-  }
-
-  #addDanmakuOpacity() {
-    this.danmakuOpacity = document.createElement("div");
-    this.danmakuOpacity.setAttribute(
-      "class",
-      "dplayer-setting-item transparency-danmaku"
-    );
-    this.danmakuOpacity.style.display = "block";
-    this.danmakuOpacity.innerHTML =
-      '<span class="dplayer-label">弹幕透明度</span>';
-    this.danmakuOpacityRange = document.createElement("input");
-    this.danmakuOpacityRange.setAttribute("type", "range");
-    this.danmakuOpacityRange.style.display = "inline-block";
-    this.danmakuOpacityRange.style.float = "right";
-    this.danmakuOpacityRange.style.width = "50%";
-    this.danmakuOpacityRange.setAttribute("min", 0);
-    this.danmakuOpacityRange.setAttribute("max", 1);
-    this.danmakuOpacityRange.setAttribute("step", 0.1);
-    this.danmakuOpacityRange.setAttribute(
-      "value",
-      this.danmakuSettings.opacity
-    );
-    this.danmakuElement.style.opacity = this.danmakuSettings.opacity;
-    this.danmakuOpacityRange.addEventListener("input", () => {
-      this.danmakuSettings.opacity = Number(this.danmakuOpacityRange.value);
-      GM_setValue("danmakuSettings", this.danmakuSettings);
-      this.danmakuElement.style.opacity = this.danmakuSettings.opacity;
-    });
-    this.danmakuOpacity.appendChild(this.danmakuOpacityRange);
-    this.danmakuSettingBox.appendChild(this.danmakuOpacity);
-  }
-
-  #addDanmakuFontSize() {
-    this.danmakuFontSize = document.createElement("div");
-    this.danmakuFontSize.setAttribute(
-      "class",
-      "dplayer-setting-item font-size-danmaku"
-    );
-    this.danmakuFontSize.style.display = "block";
-    this.danmakuFontSize.innerHTML =
-      '<span class="dplayer-label">弹幕字体大小</span>';
-    this.danmakuFontSizeRange = document.createElement("input");
-    this.danmakuFontSizeRange.setAttribute("type", "range");
-    this.danmakuFontSizeRange.style.display = "inline-block";
-    this.danmakuFontSizeRange.style.float = "right";
-    this.danmakuFontSizeRange.style.width = "50%";
-    this.danmakuFontSizeRange.setAttribute("min", 16);
-    this.danmakuFontSizeRange.setAttribute("max", 32);
-    this.danmakuFontSizeRange.setAttribute("step", 1);
-    this.danmakuFontSizeRange.setAttribute(
-      "value",
-      this.danmakuSettings.fontSize
-    );
-    setDanmakuFontSize(this.danmakuSettings.fontSize, this.danmaku);
-    this.danmakuFontSizeRange.addEventListener("input", () => {
-      this.danmakuSettings.fontSize = Number(this.danmakuFontSizeRange.value);
-      GM_setValue("danmakuSettings", this.danmakuSettings);
-      setDanmakuFontSize(this.danmakuSettings.fontSize, this.danmaku);
-    });
-    this.danmakuFontSize.appendChild(this.danmakuFontSizeRange);
-    this.danmakuSettingBox.appendChild(this.danmakuFontSize);
-
-    function setDanmakuFontSize(fontSize, danmaku) {
-      for (const i of danmaku.comments) {
-        i.style.font = `${fontSize}px sans-serif`;
-      }
-    }
-  }
-
-  #addDanmakuLimit() {
-    this.danmakuLimit = document.createElement("div");
-    this.danmakuLimit.setAttribute(
-      "class",
-      "dplayer-setting-item limit-danmaku"
-    );
-    this.danmakuLimit.style.display = "block";
-    this.danmakuLimit.innerHTML = '<span class="dplayer-label">弹幕密度</span>';
-    this.danmakuLimitRange = document.createElement("input");
-    this.danmakuLimitRange.setAttribute("type", "range");
-    this.danmakuLimitRange.style.display = "inline-block";
-    this.danmakuLimitRange.style.float = "right";
-    this.danmakuLimitRange.style.width = "50%";
-    this.danmakuLimitRange.setAttribute("min", 0);
-    this.danmakuLimitRange.setAttribute("max", 1);
-    this.danmakuLimitRange.setAttribute("step", 0.01);
-    this.danmakuLimitRange.setAttribute("value", this.danmakuSettings.limit);
-    limitDanmaku(this.danmakuSettings.limit, this.danmaku);
-    this.danmakuLimitRange.addEventListener("input", () => {
-      this.danmakuSettings.limit = Number(this.danmakuLimitRange.value);
-      GM_setValue("danmakuSettings", this.danmakuSettings);
-      limitDanmaku(this.danmakuSettings.limit, this.danmaku);
-    });
-    this.danmakuLimit.appendChild(this.danmakuLimitRange);
-    this.danmakuSettingBox.appendChild(this.danmakuLimit);
-
-    function limitDanmaku(percent, danmaku) {
-      for (const i of danmaku.comments) {
-        i.style.display = "block";
-        if (Math.random() > percent) {
-          i.style.display = "none";
-        }
-      }
-    }
-  }
-
-  #addOffsetSetting() {
-    this.offsetSetting = document.createElement("div");
-    this.offsetSetting.setAttribute("class", "dplayer-setting-item offset");
-    this.offsetSetting.style.display = "block";
-    this.offsetSetting.innerHTML =
-      '<span class="dplayer-label">弹幕偏移(s)</span>';
-    this.offsetNumber = document.createElement("input");
-    this.offsetNumber.setAttribute("type", "number");
-    this.offsetNumber.style.display = "inline-block";
-    this.offsetNumber.style.float = "right";
-    this.offsetNumber.style.width = "47%";
-    this.offsetNumber.setAttribute("min", -10);
-    this.offsetNumber.setAttribute("max", 10);
-    this.offsetNumber.setAttribute("step", 0.1);
-    this.offsetNumber.setAttribute("value", 0);
-    this.offsetNumber.addEventListener("input", () => {
-      for (const comment of this.danmaku.comments) {
-        comment.time = comment.baseTime - Number(this.offsetNumber.value);
-      }
-      this.danmakuLoader.video.currentTime = Number(
-        this.danmakuLoader.video.currentTime
-      );
-    });
-    this.offsetSetting.appendChild(this.offsetNumber);
-    this.danmakuSettingBox.appendChild(this.offsetSetting);
-  }
-}
-
-const currentSite =
-  sites[
-    Object.keys(sites).find((site) =>
-      window.location.href.match(sites[site].address)
-    )
-  ];
-
-if (currentSite) {
-  const { keyword, episode } = getKeywordAndEpisode(currentSite);
-  const videoFrame = document.querySelector(currentSite.videoFrame);
-  videoFrame.addEventListener("load", () =>
-    loadConfigToIframe(videoFrame, keyword, episode, currentSite)
-  );
-
-  window.addEventListener("message", (event) => {
-    if (event.data.includes("弹幕")) {
-      showChoosePanel(event.data, keyword, episode, currentSite, videoFrame);
-    }
-  });
-} else {
-  let danmakuControl, danmakuElement;
-  window.addEventListener("message", async (event) => {
-    if (event.data.currentSite) {
-      danmakuControl?.destroy();
-      const { keyword, episode, currentSite, xml } = event.data;
-      try {
-        ({ danmakuControl, danmakuElement } = await loadDanmaku(
-          keyword,
-          episode,
-          currentSite,
-          xml
-        ));
-        event.source.postMessage(
-          `自动加载弹幕：\n${keyword} 第${episode}集\n如果不是你想要的，请手动填入对应番剧`,
-          event.origin
-        );
-      } catch (e) {
-        console.error(e);
-        event.source.postMessage(
-          `加载弹幕失败：\n${keyword} 第${episode}集\n请检查B站是否存在对应剧集`,
-          event.origin
-        );
-        return;
-      }
-      await new DanmakuSettings(
-        danmakuControl,
-        danmakuElement,
-        currentSite.iconsBar
-      );
-    }
-  });
-}
-
-async function loadDanmakuOld(site) {
-  const keyword = document
-    .querySelector(site.bangumiTitle)
-    .textContent.replace(/ 第[0-9]+集.*/gi, "")
-    .replace(/ 第[0-9]+话.*/gi, "")
-    .replace(/ Part ?[0-9]+.*/, "");
-  const episode = Number(
-    document.querySelector(site.episode).textContent.replace(/[^0-9]+/gi, "")
-  );
-  const autoLoadedMessage = `自动加载弹幕：\n${keyword} 第${episode}集\n如果不是你想要的，请手动填入对应番剧`;
-  const loadFailedMessage = `加载弹幕失败：\n${keyword} 第${episode}集\n请检查B站是否存在对应剧集`;
-  let danmaku;
-  let danmakuLoader;
-  let danmakuDOM;
-
-  const iframeDocument = iframe.contentWindow.document;
-  const container = iframeDocument.querySelector(site.container);
-  const video = iframeDocument.querySelector(site.video);
-  const iconsBar = iframeDocument.querySelector(site.iconsBar);
-
-  try {
-    danmaku = await loadFromBilibili(keyword, episode);
-    await addDialog(autoLoadedMessage);
-  } catch (e) {
-    console.log(e);
-    await addDialog(loadFailedMessage);
-  }
-
-  function addDialog(message) {
-    GM_addElement(document.body, "div", {
-      style: `position:fixed;
-         top:50%;
-         left:1em;
-         transform:translateY(-50%);
-         background-color:rgba(0,0,0,0.7);
-         color:white;
-         font:1em sans-serif;
-         padding:1em;
-         border-radius:8px;
-         line-height:1.5;
-         min-width:17em;`,
-      class: "danmakuChoose",
-    });
-
-    document.querySelector(
-      ".danmakuChoose"
-    ).innerHTML = `<pre style="margin:0;font-family:sans-serif">${message}</pre>
-    <div style="display:flex;justify-content:space-between;margin:1em 0;"><label for="keyword">番剧名称</label><input style="border-radius:4px;padding:0 0.2em;" id="keyword" value="${keyword}"/></div>
-    <div style="display:flex;justify-content:space-between;margin:1em 0;"><label for="episode">剧集数</label><input style="border-radius:4px;padding:0 0.2em;" id="episode" value="${episode}"/></div>
-    <button id="manualDanmakuButton" style="width:100%;margin-bottom:0.2em;">确认</button>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:2em 0 0 0;"><p style="flex:3;display:inline-flex;">或手动上传XML弹幕文件</p><button id="uploadXMLButton" style="flex:1;">选择</button></div>`;
-
-    document
-      .querySelector("#manualDanmakuButton")
-      .addEventListener("click", () => {
-        const keyword = document.querySelector("#keyword").value;
-        const episode = document.querySelector("#episode").value;
-        reloadDanmaku(keyword, episode);
-      });
-
-    document.querySelector("#uploadXMLButton").addEventListener("click", () => {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "text/xml";
-      input.addEventListener("change", () => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const xml = reader.result;
-          reloadDanmaku(null, null, xml);
-        };
-        reader.readAsText(input.files[0]);
-      });
-      input.click();
-    });
-  }
-
-  async function loadFromBilibili(keyword, episode, xml) {
-    while (!container || !video) {
-      await wait(1);
-    }
-    load();
-
-    function wait(seconds) {
-      return new Promise((resolve) => {
-        setTimeout(resolve, seconds * 1000);
-      });
-    }
-
-    async function load() {
-      danmakuLoader = await new DanmakuControl(
-        keyword,
-        episode,
-        container,
-        video
-      );
-      danmaku = await danmakuLoader.show(xml);
-      danmakuDOM = await danmakuLoader.container.lastElementChild;
-      await new DanmakuSettings(
-        danmakuLoader,
-        danmakuDOM,
-        iconsBar,
-        iframeDocument
-      );
-      return danmaku;
-    }
-  }
-
-  async function reloadDanmaku(keyword, episode, xml) {
-    if (danmaku) {
-      danmaku.destroy();
-    }
-    await loadFromBilibili(keyword, episode, xml);
+  applySettings(settings) {
+    this.toggleShowAndHide(settings.show);
+    this.setSpeed(settings.speed);
+    this.setOpacity(settings.opacity);
+    this.setFontSize(settings.fontSize);
+    this.setLimit(settings.limit);
   }
 }
 
@@ -684,51 +273,84 @@ function loadConfigToIframe(
   );
 }
 
-async function loadDanmaku(keyword, episode, currentSite, xml = undefined) {
-  const danmakuControl = await new DanmakuControl(
-    keyword,
-    episode,
-    currentSite.container,
-    currentSite.video,
-    xml
-  );
-  await danmakuControl.load(xml);
-  danmakuControl.show();
-  const danmakuElement = await danmakuControl.container.lastElementChild;
-  return { danmakuControl, danmakuElement };
-}
-
 function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
   if (document.querySelector(".danmakuChoose")) {
     document.querySelector(".danmakuChoose").remove();
   }
 
-  GM_addElement(document.body, "div", { class: "danmakuChoose" });
+  const storedSettings = getStoredSettings();
 
+  GM_addElement(document.body, "div", { class: "danmakuChoose" });
   document.querySelector(
     ".danmakuChoose"
   ).innerHTML = `<pre id="danmaku-message">${message}</pre>
-  <div class="danmaku-metadata">
-    <label for="keyword">番剧名</label>
-    <input class="danmaku-metadata-input" id="keyword" value="${keyword}"/>
-  </div>
-  <div class="danmaku-metadata">
-    <label for="episode">剧集数</label>
-    <input class="danmaku-metadata-input" id="episode" value="${episode}"/>
+  <hr class="danmaku-panel-hr"/>
+
+  <div class="danmaku-settings-wrapper">
+    <div class="danmaku-metadata">
+      <label for="keyword">番剧名</label>
+      <input class="danmaku-metadata-input" id="keyword" value="${keyword}"/>
+    </div>
+    <div class="danmaku-metadata">
+      <label for="episode">剧集数</label>
+      <input class="danmaku-metadata-input" id="episode" value="${episode}"/>
+    </div>
   </div>
   <button class="sakura-danmaku-button" id="manual-danmaku-button">确认</button>
+
   <div class="danmaku-upload">
     <p class="danmaku-upload-label">或手动上传XML弹幕文件</p>
     <button class="sakura-danmaku-button" id="upload-xml-button">选择</button>
+  </div>
+  <hr class="danmaku-panel-hr"/>
+  
+  <div class="danmaku-settings-wrapper danmaku-iframe-settings-wrapper">
+    <div class="danmaku-settings">
+      <label for="danmaku-show">显示弹幕</label>
+      <input type="checkbox" id="danmaku-show" ${
+        storedSettings.show ? "checked" : ""
+      }/>
+    </div>
+    <div class="danmaku-settings">
+      <label for="danmaku-speed">弹幕速度</label>
+      <input type="range" id="danmaku-speed" min="72" max="288" step="2" value="${
+        storedSettings.speed
+      }"/>
+    </div>
+    <div class="danmaku-settings">
+      <label for="danmaku-opacity">弹幕透明度</label>
+      <input type="range" id="danmaku-opacity" min="0" max="1" step="0.1" value="${
+        storedSettings.opacity
+      }"/>
+    </div>
+    <div class="danmaku-settings">
+      <label for="danmaku-font-size">字体大小</label>
+      <input type="range" id="danmaku-font-size" min="16" max="32" step="2" value="${
+        storedSettings.fontSize
+      }"/>
+    </div>
+    <div class="danmaku-settings">
+      <label for="danmaku-limit">弹幕密度</label>
+      <input type="range" id="danmaku-limit" min="0" max="1" step="0.02" value="${
+        storedSettings.limit
+      }"/>
+    </div>
+    <div class="danmaku-settings">
+      <label for="danmaku-offset">弹幕偏移</label>
+      <input type="number" id="danmaku-offset" min="-30" max="30" step="2" value="0"/>
+      s
+    </div>
   </div>`;
 
   const globalStyle = `.danmakuChoose {
     position:fixed;
-    left:${currentSite.panelLeft?currentSite.panelLeft:"auto"};
-    top:${currentSite.panelTop?currentSite.panelTop:"auto"};
-    right:${currentSite.panelRight?currentSite.panelRight:"auto"};
-    bottom:${currentSite.panelBottom?currentSite.panelBottom:"auto"};
-    transform:${currentSite.panelTransform?currentSite.panelTransform:"none"};
+    left:${currentSite.panelLeft ? currentSite.panelLeft : "auto"};
+    top:${currentSite.panelTop ? currentSite.panelTop : "auto"};
+    right:${currentSite.panelRight ? currentSite.panelRight : "auto"};
+    bottom:${currentSite.panelBottom ? currentSite.panelBottom : "auto"};
+    transform:${
+      currentSite.panelTransform ? currentSite.panelTransform : "none"
+    };
     background-color:rgba(32,32,32,0.9);
     color:white;
     font:1em sans-serif !important;
@@ -736,22 +358,74 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
     border-radius:8px;
     border:1px solid gray;
     line-height:1.5;
-    min-width:19em;
     z-index:999999;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
   }
   
   pre#danmaku-message {
     font-family:sans-serif !important;
-    margin:0 0 2em 0 !important;
+    margin:0 !important;
     text-align:center;
   }
   
+  hr.danmaku-panel-hr {
+    border-top: 1px solid lightgray;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    margin: 1em 0;
+  }
+
+  div.danmaku-settings-wrapper {
+    display:flex;
+    flex-direction:column;
+    gap:0.5em;
+    margin: 0 0 0.5em 0;
+    text-align: initial;
+  }
+
+  div.danmaku-settings{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap: 0.5em;
+  }
+
+  div.danmaku-settings > input {
+    appearance: auto;
+    -moz-appearance: auto;
+    -webkit-appearance: auto;
+    border: 1px solid lightgray;
+    flex:6 1 0;
+    height:1.4em;
+  }
+
+  div.danmaku-settings > label {
+    flex:4 1 0;
+  }
+
+  div.danmaku-settings > input[type="checkbox"] {
+    max-width:1em;
+    height:1em;
+    border-radius:4px;
+  }
+
+  div.danmaku-settings > input[type="number"] {
+    border-radius:4px;
+    flex:5.5 1 0;
+  }
+
+  div.danmaku-settings > input[type="range"] {
+    height:auto;
+  }
+
   div.danmaku-metadata{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    margin:0.5em 0;
-    gap: 2em;
+    gap: 1em;
   }
   
   input.danmaku-metadata-input {
@@ -773,7 +447,7 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
     display:flex;
     justify-content:space-between;
     align-items:center;
-    margin:2em 0 0 0;
+    margin:1em 0 0 0;
   }
   
   p.danmaku-upload-label {
@@ -824,5 +498,129 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
       reader.readAsText(input.files[0]);
     });
     input.click();
+  });
+
+  document
+    .querySelectorAll(".danmaku-iframe-settings-wrapper input")
+    .forEach((input) => {
+      input.addEventListener("input", () => {
+        videoFrame.contentWindow.postMessage(
+          {
+            type: "danmaku-settings",
+            settings: {
+              show: document.querySelector("#danmaku-show").checked,
+              speed: document.querySelector("#danmaku-speed").value,
+              opacity: document.querySelector("#danmaku-opacity").value,
+              fontSize: document.querySelector("#danmaku-font-size").value,
+              limit: document.querySelector("#danmaku-limit").value,
+              offset: document.querySelector("#danmaku-offset").value,
+            },
+          },
+          currentSite.videoFrameURL
+        );
+      });
+    });
+}
+
+async function loadDanmaku(keyword, episode, currentSite, xml = undefined) {
+  const danmakuControl = await new DanmakuControl(
+    keyword,
+    episode,
+    currentSite.container,
+    currentSite.video,
+    xml
+  );
+  await danmakuControl.load(xml);
+  danmakuControl.show();
+  return danmakuControl;
+}
+
+function getChangedSetting(settings, storedSettings) {
+  for (const setting in settings) {
+    if (setting === "offset" && settings[setting] !== 0) {
+      return "offset";
+    }
+    if (settings[setting] !== storedSettings[setting]) {
+      return setting;
+    }
+  }
+}
+
+function getStoredSettings() {
+  return GM_getValue("danmakuSettings", {
+    show: true,
+    speed: 144,
+    opacity: 1,
+    fontSize: 25,
+    limit: 1,
+  });
+}
+
+const currentSite =
+  sites[
+    Object.keys(sites).find((site) =>
+      window.location.href.match(sites[site].address)
+    )
+  ];
+
+if (currentSite) {
+  const { keyword, episode } = getKeywordAndEpisode(currentSite);
+  const videoFrame = document.querySelector(currentSite.videoFrame);
+  videoFrame.addEventListener("load", () =>
+    loadConfigToIframe(videoFrame, keyword, episode, currentSite)
+  );
+
+  window.addEventListener("message", (event) => {
+    if (event.data.includes("加载弹幕")) {
+      showChoosePanel(event.data, keyword, episode, currentSite, videoFrame);
+    }
+  });
+} else {
+  let danmakuControl;
+  window.addEventListener("message", async (event) => {
+    if (event.data.currentSite) {
+      danmakuControl?.destroy();
+      const { keyword, episode, currentSite, xml } = event.data;
+      try {
+        danmakuControl = await loadDanmaku(keyword, episode, currentSite, xml);
+        event.source.postMessage(
+          `自动加载弹幕：\n${keyword} 第${episode}集\n如果不是你想要的，请手动填入对应番剧`,
+          event.origin
+        );
+      } catch (e) {
+        console.error(e);
+        event.source.postMessage(
+          `加载弹幕失败：\n${keyword} 第${episode}集\n请检查B站是否存在对应剧集`,
+          event.origin
+        );
+        return;
+      }
+    } else if (event.data.type === "danmaku-settings") {
+      switch (getChangedSetting(event.data.settings, getStoredSettings())) {
+        case "show":
+          danmakuControl.toggleShowAndHide(event.data.settings.show);
+          break;
+        case "speed":
+          danmakuControl.setSpeed(event.data.settings.speed);
+          break;
+        case "opacity":
+          danmakuControl.setOpacity(event.data.settings.opacity);
+          break;
+        case "fontSize":
+          danmakuControl.setFontSize(event.data.settings.fontSize);
+          break;
+        case "limit":
+          danmakuControl.setLimit(event.data.settings.limit);
+          break;
+        case "offset":
+          danmakuControl.setOffset(event.data.settings.offset);
+          break;
+        default:
+          break;
+      }
+
+      delete event.data.settings.offset;
+      GM_setValue("danmakuSettings", event.data.settings);
+    }
   });
 }
