@@ -3,13 +3,13 @@
 /* eslint-disable no-undef */
 // ==UserScript==
 // @name         SakuraDanmaku 樱花弹幕
-// @namespace    https://greasyfork.org/en/scripts/455196-sakuradanmaku-%E6%A8%B1%E8%8A%B1%E5%BC%B9%E5%B9%95
-// @version      1.0.0
-// @description  yhdm, but with Danmaku from Bilibili  让樱花动漫加载 Bilibili 弹幕
+// @namespace    https://muted.top/
+// @version      1.0.1
+// @description  yhdm, but with Danmaku from Bilibili  让樱花动漫和橘子动漫加载 Bilibili 弹幕
 // @author       MUTED64
-// @match        https://*.yhdmp.cc/vp/*
-// @match        https://*.mgnacg.com/bangumi/*
-// @match        https://www.yhdmp.cc/yxsf/player/dpx2/*
+// @match        *://*.yhpdm.net/vp/*
+// @match        *://*.mgnacg.com/bangumi/*
+// @match        https://www.yhpdm.net/yxsf/player/dpx2/*
 // @match        https://play.mknacg.top:8585/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
@@ -27,9 +27,9 @@
 
 const sites = {
   yhdm: {
-    address: /.*:\/\/.*\.yhdmp\.cc\/vp\/.*/,
+    address: /.*:\/\/.*\.yhpdm\.net\/vp\/.*/,
     videoFrame: "iframe",
-    videoFrameURL: "https://www.yhdmp.cc/yxsf/player/dpx2",
+    videoFrameURL: "https://www.yhpdm.net/yxsf/player/dpx2",
     bangumiTitle: "title",
     episode: "div.gohome > span",
     container: "div.dplayer-video-wrap",
