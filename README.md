@@ -30,7 +30,7 @@ GitHub: <https://github.com/MUTED64/SakuraDanmaku>
 - [x] 手动修改弹幕池
 - [x] 前端交互面板
 - [x] 手动选择本地 XML 弹幕文件
-- [x] 适配樱花动漫(P)和橘子动漫
+- [x] 适配樱花动漫(P)、yinghuacd、橘子动漫、AKK动漫
 
 ## 暂不适配的功能
 

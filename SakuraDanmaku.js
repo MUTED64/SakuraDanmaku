@@ -4,13 +4,17 @@
 // ==UserScript==
 // @name         SakuraDanmaku 樱花弹幕
 // @namespace    https://muted.top/
-// @version      1.0.1
+// @version      1.0.2
 // @description  yhdm, but with Danmaku from Bilibili  让樱花动漫和橘子动漫加载 Bilibili 弹幕
 // @author       MUTED64
 // @match        *://*.yhpdm.net/vp/*
 // @match        *://*.mgnacg.com/bangumi/*
+// @match        *://*.akkdm.com/play/*
+// @match        *://*.yinghuacd.com/v/*
 // @match        https://www.yhpdm.net/yxsf/player/dpx2/*
 // @match        https://play.mknacg.top:8585/*
+// @match        https://www.akkdm.com/dp/*
+// @match        https://tup.yinghuacd.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -50,6 +54,31 @@ const sites = {
     iconsBar: "div.art-video-player div.art-controls > div.art-controls-right",
     panelRight: "10em",
     panelBottom: "2%",
+  },
+  akkdm: {
+    address: /.*:\/\/.*\.akkdm\.com\/play\/.*/,
+    videoFrame: "#playleft > iframe",
+    videoFrameURL: "https://www.akkdm.com/dp",
+    bangumiTitle: "body > div.page.player > div.main > div > div.module.module-player > div > div.module-player-side > div.module-player-info > div > h1 > a",
+    episode: "#panel2 > div > div > a.module-play-list-link.active",
+    container: "div.video-wrapper",
+    video: "div.video-wrapper > video",
+    iconsBar: "div.art-video-player div.art-controls > div.art-controls-right",
+    panelLeft: "1px",
+    panelBottom: "2%",
+  },
+  yinghuacd: {
+    address: /.*:\/\/.*\.yinghuacd\.com\/v\/.*/,
+    videoFrame: "iframe",
+    videoFrameURL: "https://tup.yinghuacd.com",
+    bangumiTitle: "div.gohome > h1 > a",
+    episode: "div.gohome span",
+    container: "div.dplayer-video-wrap",
+    video: "div.dplayer-video-wrap > video",
+    iconsBar: "div.dplayer-controller > div.dplayer-icons.dplayer-icons-right",
+    panelLeft: "1em",
+    panelTop: "42%",
+    panelTransform: "translateY(-50%)",
   },
 };
 
@@ -161,30 +190,47 @@ class DanmakuControl {
     this.episode = episode;
     this.container = document.querySelector(container);
     this.video = document.querySelector(video);
+    const selectInterval = setInterval(() => {
+      this.container = document.querySelector(container);
+      this.video = document.querySelector(video);
+      if (this.container && this.video) {
+        clearInterval(selectInterval);
+      }
+    }, 500);
   }
 
   async load(xml = undefined) {
     const bilibiliDanmaku = new BilibiliDanmaku(this.keyword, this.episode);
     this.basic_info = await bilibiliDanmaku.getInfoAndDanmaku(xml);
-    this.danmaku = new Danmaku({
-      container: this.container,
-      media: this.video,
-      comments: this.basic_info.danmaku,
-      speed: 144,
-    });
+    const loadInterval = setInterval(() => {
+      if (this.container && this.video) {
+        this.danmaku = new Danmaku({
+            container: this.container,
+            media: this.video,
+            comments: this.basic_info.danmaku,
+            speed: 144,
+        });
+        clearInterval(loadInterval);
+      }
+    }, 500);
   }
 
   show() {
-    this.video.style.position = "absolute";
-    this.danmaku.show();
-    this.danmakuElement = this.container.lastElementChild;
-    this.danmakuElement.style.zIndex = 1000;
-    this.danmakuSettings = getStoredSettings();
-    this.applySettings(this.danmakuSettings);
-    let resizeObserver = new ResizeObserver(() => {
-      this.danmaku.resize();
-    });
-    resizeObserver.observe(this.container);
+    const showInterval = setInterval(() => {
+      if (this.container && this.video) {
+        this.video.style.position = "absolute";
+        this.danmaku.show();
+        this.danmakuElement = this.container.lastElementChild;
+        this.danmakuElement.style.zIndex = 1000;
+        this.danmakuSettings = getStoredSettings();
+        this.applySettings(this.danmakuSettings);
+        let resizeObserver = new ResizeObserver(() => {
+          this.danmaku.resize();
+        });
+        resizeObserver.observe(this.container);
+        clearInterval(showInterval);
+      }
+    }, 500);
   }
 
   toggleShowAndHide(show) {
@@ -303,7 +349,7 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
     <button class="sakura-danmaku-button" id="upload-xml-button">选择</button>
   </div>
   <hr class="danmaku-panel-hr"/>
-  
+
   <div class="danmaku-settings-wrapper danmaku-iframe-settings-wrapper">
     <div class="danmaku-settings">
       <label for="danmaku-show">显示弹幕</label>
@@ -363,13 +409,13 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
     display:flex;
     flex-direction:column;
   }
-  
+
   pre#danmaku-message {
     font-family:sans-serif !important;
     margin:0 !important;
     text-align:center;
   }
-  
+
   hr.danmaku-panel-hr {
     border-top: 1px solid lightgray;
     border-bottom: none;
@@ -427,7 +473,7 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
     align-items:center;
     gap: 1em;
   }
-  
+
   input.danmaku-metadata-input {
     border-radius:4px;
     padding:0 0.2em;
@@ -437,25 +483,25 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
     color:white;
     flex:1;
   }
-  
+
   button#manual-danmaku-button {
     width:100%;
     margin-bottom:0.2em;
   }
-  
+
   div.danmaku-upload {
     display:flex;
     justify-content:space-between;
     align-items:center;
     margin:1em 0 0 0;
   }
-  
+
   p.danmaku-upload-label {
     flex:3;
     display:inline-flex;
     margin:0!important;
   }
-  
+
   button#upload-xml-button {
     flex:1;
   }
