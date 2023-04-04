@@ -4,7 +4,7 @@
 // ==UserScript==
 // @name         SakuraDanmaku 樱花弹幕
 // @namespace    https://muted.top/
-// @version      1.0.2
+// @version      1.0.3
 // @description  yhdm, but with Danmaku from Bilibili  让樱花动漫和橘子动漫加载 Bilibili 弹幕
 // @author       MUTED64
 // @match        *://*.yhpdm.net/vp/*
@@ -329,7 +329,10 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
   GM_addElement(document.body, "div", { class: "danmakuChoose" });
   document.querySelector(
     ".danmakuChoose"
-  ).innerHTML = `<pre id="danmaku-message">${message}</pre>
+  ).innerHTML = `
+  <button class="sakura-danmaku-button" id="folding-button">折叠面板</button>
+  
+  <pre id="danmaku-message">${message}</pre>
   <hr class="danmaku-panel-hr"/>
 
   <div class="danmaku-settings-wrapper">
@@ -408,6 +411,7 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
     overflow:hidden;
     display:flex;
     flex-direction:column;
+    user-select:none;
   }
 
   pre#danmaku-message {
@@ -519,9 +523,26 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
     background-color:lightgray;
     color:black;
   }
+
+  button#folding-button {
+    visibility:visible;
+    width:7em;
+    margin-bottom:0.5em;
+  }
   `;
 
   GM_addStyle(globalStyle);
+
+  document.querySelector("#folding-button").addEventListener("click", () => {
+    const danmakuChoose = document.querySelector(".danmakuChoose");
+    if (danmakuChoose.style.visibility === "hidden") {
+      danmakuChoose.style.visibility = "visible";
+      document.querySelector("#folding-button").textContent = "折叠面板";
+    } else {
+      danmakuChoose.style.visibility = "hidden";
+      document.querySelector("#folding-button").textContent = "展开面板";
+    }
+  });
 
   document
     .querySelector("#manual-danmaku-button")
