@@ -4,17 +4,19 @@
 // ==UserScript==
 // @name         SakuraDanmaku 樱花弹幕
 // @namespace    https://muted.top/
-// @version      1.0.3
+// @version      1.0.4
 // @description  yhdm, but with Danmaku from Bilibili  让樱花动漫和橘子动漫加载 Bilibili 弹幕
 // @author       MUTED64
 // @match        *://*.yhpdm.net/vp/*
 // @match        *://*.mgnacg.com/bangumi/*
 // @match        *://*.akkdm.com/play/*
 // @match        *://*.yinghuacd.com/v/*
+// @match        *://*.agemys.net/play/*
 // @match        https://www.yhpdm.net/yxsf/player/dpx2/*
 // @match        https://play.mknacg.top:8585/*
 // @match        https://www.akkdm.com/dp/*
 // @match        https://tup.yinghuacd.com/*
+// @match        https://www.agemys.net/age/player/dp2/*
 // @grant        GM_xmlhttpRequest
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -80,6 +82,19 @@ const sites = {
     panelTop: "42%",
     panelTransform: "translateY(-50%)",
   },
+  agedm: {
+    address: /.*:\/\/.*\.agemys\.net\/play\/.*/,
+    videoFrame: "iframe#age_playfram",
+    videoFrameURL: "https://www.agemys.net/age/player/dp2",
+    bangumiTitle: "#detailname > a",
+    episode: "#main0 > div:nth-child(2) > ul > li > a[style]",
+    container: "div.dplayer-video-wrap",
+    video: "div.dplayer-video-wrap > video",
+    iconsBar: "div.dplayer-controller > div.dplayer-icons.dplayer-icons-right",
+    panelLeft: "1em",
+    panelTop: "42%",
+    panelTransform: "translateY(-50%)",
+  }
 };
 
 class BilibiliDanmaku {
