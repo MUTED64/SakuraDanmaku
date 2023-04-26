@@ -61,7 +61,8 @@ const sites = {
     address: /.*:\/\/.*\.akkdm\.com\/play\/.*/,
     videoFrame: "#playleft > iframe",
     videoFrameURL: "https://www.akkdm.com/dp",
-    bangumiTitle: "body > div.page.player > div.main > div > div.module.module-player > div > div.module-player-side > div.module-player-info > div > h1 > a",
+    bangumiTitle:
+      "body > div.page.player > div.main > div > div.module.module-player > div > div.module-player-side > div.module-player-info > div > h1 > a",
     episode: "#panel2 > div > div > a.module-play-list-link.active",
     container: "div.video-wrapper",
     video: "div.video-wrapper > video",
@@ -94,7 +95,7 @@ const sites = {
     panelLeft: "1em",
     panelTop: "42%",
     panelTransform: "translateY(-50%)",
-  }
+  },
 };
 
 class BilibiliDanmaku {
@@ -220,10 +221,10 @@ class DanmakuControl {
     const loadInterval = setInterval(() => {
       if (this.container && this.video) {
         this.danmaku = new Danmaku({
-            container: this.container,
-            media: this.video,
-            comments: this.basic_info.danmaku,
-            speed: 144,
+          container: this.container,
+          media: this.video,
+          comments: this.basic_info.danmaku,
+          speed: 144,
         });
         clearInterval(loadInterval);
       }
@@ -290,29 +291,66 @@ class DanmakuControl {
     this.video.currentTime = Number(this.video.currentTime);
   }
 
+  setHideTop(hideTop) {
+    if (hideTop) {
+      for (const i of this.danmaku.comments) {
+        if (i.mode === "top") {
+          i.style.display = "none";
+        }
+      }
+    } else {
+      for (const i of this.danmaku.comments) {
+        if (i.mode === "top") {
+          i.style.display = "block";
+        }
+      }
+    }
+  }
+
+  setHideBottom(hideBottom) {
+    if (hideBottom) {
+      for (const i of this.danmaku.comments) {
+        if (i.mode === "bottom") {
+          i.style.display = "none";
+        }
+      }
+    } else {
+      for (const i of this.danmaku.comments) {
+        if (i.mode === "bottom") {
+          i.style.display = "block";
+        }
+      }
+    }
+  }
+
   applySettings(settings) {
     this.toggleShowAndHide(settings.show);
     this.setSpeed(settings.speed);
     this.setOpacity(settings.opacity);
     this.setFontSize(settings.fontSize);
     this.setLimit(settings.limit);
+    this.setHideTop(settings.hideTop);
+    this.setHideBottom(settings.hideBottom);
   }
 }
 
-function getKeywordAndEpisode(currentSite) {
-  const keyword = document
+function getMainPageInfo(currentSite) {
+  let keyword = document
     .querySelector(currentSite.bangumiTitle)
     .textContent.replace(/ 第[0-9]+集.*/gi, "")
     .replace(/ 第[0-9]+话.*/gi, "")
     .replace(/ Part ?[0-9]+.*/, "");
-  const episode = Number(
+  let episode = Number(
     document
       .querySelector(currentSite.episode)
       .textContent.replace(/[^0-9]+/gi, "")
   );
+  let videoFrame = document.querySelector(currentSite.videoFrame);
+
   return {
     keyword,
     episode,
+    videoFrame,
   };
 }
 
@@ -342,9 +380,7 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
   const storedSettings = getStoredSettings();
 
   GM_addElement(document.body, "div", { class: "danmakuChoose" });
-  document.querySelector(
-    ".danmakuChoose"
-  ).innerHTML = `
+  document.querySelector(".danmakuChoose").innerHTML = `
   <button class="sakura-danmaku-button" id="folding-button">折叠面板</button>
   
   <pre id="danmaku-message">${message}</pre>
@@ -403,6 +439,16 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
       <label for="danmaku-offset">弹幕偏移</label>
       <input type="number" id="danmaku-offset" min="-30" max="30" step="2" value="0"/>
       s
+    </div>
+    <div class="danmaku-settings">
+      <label for="danmaku-hide-top">屏蔽顶部弹幕</label>
+      <input type="checkbox" id="danmaku-hide-top" ${
+        storedSettings.hideTop ? "checked" : ""
+      }/>
+      <label for="danmaku-hide-bottom">屏蔽底部弹幕</label>
+      <input type="checkbox" id="danmaku-hide-bottom" ${
+        storedSettings.hideBottom ? "checked" : ""
+      }/>
     </div>
   </div>`;
 
@@ -596,6 +642,9 @@ function showChoosePanel(message, keyword, episode, currentSite, videoFrame) {
               fontSize: document.querySelector("#danmaku-font-size").value,
               limit: document.querySelector("#danmaku-limit").value,
               offset: document.querySelector("#danmaku-offset").value,
+              hideTop: document.querySelector("#danmaku-hide-top").checked,
+              hideBottom: document.querySelector("#danmaku-hide-bottom")
+                .checked,
             },
           },
           currentSite.videoFrameURL
@@ -619,10 +668,12 @@ async function loadDanmaku(keyword, episode, currentSite, xml = undefined) {
 
 function getChangedSetting(settings, storedSettings) {
   for (const setting in settings) {
-    if (setting === "offset" && settings[setting] !== 0) {
+    if (setting === "offset" && settings[setting] !== "0") {
       return "offset";
-    }
-    if (settings[setting] !== storedSettings[setting]) {
+    } else if (
+      setting !== "offset" &&
+      settings[setting] !== storedSettings[setting]
+    ) {
       return setting;
     }
   }
@@ -635,6 +686,8 @@ function getStoredSettings() {
     opacity: 1,
     fontSize: 25,
     limit: 1,
+    hideTop: false,
+    hideBottom: false,
   });
 }
 
@@ -646,11 +699,8 @@ const currentSite =
   ];
 
 if (currentSite) {
-  const { keyword, episode } = getKeywordAndEpisode(currentSite);
-  const videoFrame = document.querySelector(currentSite.videoFrame);
-  videoFrame.addEventListener("load", () =>
-    loadConfigToIframe(videoFrame, keyword, episode, currentSite)
-  );
+  const { keyword, episode, videoFrame } = getMainPageInfo(currentSite);
+  videoFrame.onload = () => loadConfigToIframe(videoFrame, keyword, episode, currentSite);
 
   window.addEventListener("message", (event) => {
     if (event.data.includes("加载弹幕")) {
@@ -693,6 +743,12 @@ if (currentSite) {
           break;
         case "limit":
           danmakuControl.setLimit(event.data.settings.limit);
+          break;
+        case "hideTop":
+          danmakuControl.setHideTop(event.data.settings.hideTop);
+          break;
+        case "hideBottom":
+          danmakuControl.setHideBottom(event.data.settings.hideBottom);
           break;
         case "offset":
           danmakuControl.setOffset(event.data.settings.offset);
