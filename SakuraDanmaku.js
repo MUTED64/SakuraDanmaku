@@ -4,7 +4,7 @@
 // ==UserScript==
 // @name         SakuraDanmaku 樱花弹幕
 // @namespace    https://muted.top/
-// @version      1.0.4
+// @version      1.0.5
 // @description  yhdm, but with Danmaku from Bilibili  让樱花动漫和橘子动漫加载 Bilibili 弹幕
 // @author       MUTED64
 // @match        *://*.yhpdm.net/vp/*
@@ -13,7 +13,7 @@
 // @match        *://*.yinghuacd.com/v/*
 // @match        *://*.agemys.net/play/*
 // @match        https://www.yhpdm.net/yxsf/player/dpx2/*
-// @match        https://play.mknacg.top:8585/*
+// @match        https://player.mknacg.top/*
 // @match        https://www.akkdm.com/dp/*
 // @match        https://tup.yinghuacd.com/*
 // @match        https://www.agemys.net/age/player/dp2/*
@@ -48,7 +48,7 @@ const sites = {
   mgnacg: {
     address: /.*:\/\/.*\.mgnacg\.com\/bangumi\/.*/,
     videoFrame: "iframe#videoiframe",
-    videoFrameURL: "https://play.mknacg.top:8585",
+    videoFrameURL: "https://player.mknacg.top",
     bangumiTitle: "h1.page-title > a",
     episode: "span.btn-pc.page-title",
     container: "div.art-video-player",
